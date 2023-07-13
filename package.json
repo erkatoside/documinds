@@ -9,10 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@onflow/fcl": "^1.4.1",
+    "@pinecone-database/pinecone": "^0.1.6",
+    "ai": "^2.1.19",
     "autoprefixer": "10.4.14",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
+    "langchain": "^0.0.108",
     "next": "13.4.9",
+    "openai-edge": "^1.2.0",
+    "pdf-parse": "^1.1.1",
     "postcss": "8.4.25",
     "react": "18.2.0",
     "react-dom": "18.2.0",
