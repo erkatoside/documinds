@@ -58,6 +58,7 @@ export default function Home() {
         });
       }
 
+      // Process upload file
       console.log(f[0]);
     },
   });
