@@ -2,15 +2,17 @@
 import { useEffect, useMemo, useState } from "react";
 import * as fcl from "@onflow/fcl";
 import { useRouter } from "next/navigation";
-import { Button, ChakraProvider, Menu, MenuButton, MenuItem, MenuList, useToast } from "@chakra-ui/react";
+import { Button, ChakraProvider, Menu, MenuButton, MenuItem, MenuList, Spinner, useToast } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useDropzone } from "react-dropzone";
+import Link from "next/link";
+import axios from "axios";
 
 const SAMPLE = [
-  { id: 1, title: "Testing" },
-  { id: 2, title: "Testing" },
-  { id: 3, title: "Testing" },
-  { id: 4, title: "Testing" },
+  { id: 1, title: "Testing", slug: "lomba" },
+  { id: 2, title: "Testing", slug: "rumah" },
+  { id: 3, title: "Testing", slug: "lomba" },
+  { id: 4, title: "Testing", slug: "rumah" },
 ];
 
 const baseStyle = {
@@ -45,21 +47,69 @@ export default function Home() {
   const toast = useToast();
   const router = useRouter();
   const [user, setUser] = useState();
+  const [processing, setProcessing] = useState(false);
 
-  const { acceptedFiles, getRootProps, getInputProps, isFocused, isDragAccept, isDragReject } = useDropzone({
+  const { getRootProps, getInputProps, isFocused, isDragAccept, isDragReject } = useDropzone({
     multiple: false,
     accept: "application/pdf",
-    onDrop: (f) => {
+    onDrop: async (f) => {
       if (f[0]?.type !== "application/pdf") {
         return toast({
           title: `File type is not allowed. Only PDF is accepted!`,
-          status: 'error',
+          status: "error",
+          isClosable: true,
+        });
+      }
+      setProcessing(true);
+      
+      // Process upload file
+      let ipfsImageHash = "";
+      const fileId = new Date().toTimeString();
+      const formData = new FormData();
+      formData.append("file", f[0]);
+      formData.append(
+        "pinataMetadata",
+        JSON.stringify({
+          name: fileId,
+        })
+      );
+      formData.append(
+        "pinataOptions",
+        JSON.stringify({
+          cidVersion: 0,
+        })
+      );
+      try {
+        const res = await axios.post("https://api.pinata.cloud/pinning/pinFileToIPFS", formData, {
+          maxBodyLength: "Infinity",
+          headers: {
+            "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+          },
+        });
+
+        ipfsImageHash = res.data.IpfsHash;
+      } catch (error) {
+        setProcessing(false);
+        return toast({
+          title: `Failed to upload your docs. Try again`,
+          status: "error",
           isClosable: true,
         });
       }
 
-      // Process upload file
-      console.log(f[0]);
+      // Processing embeddings file
+      await fetch("/api/upload", {
+        method: "POST",
+        body: JSON.stringify({
+          slug: ipfsImageHash,
+          url: `https://ipfs.io/ipfs/${ipfsImageHash}`,
+        }),
+      })
+        .then((res) => console.log(res))
+        .catch((err) => console.log(err));
+        
+      setProcessing(false);
     },
   });
 
@@ -86,7 +136,9 @@ export default function Home() {
         <nav className="bg-white h-16 shadow flex items-center">
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between">
-              <img src="/img/documinds-dark.webp" alt="Logo" className="h-4" />
+              <Link href="/">
+                <img src="/img/documinds-dark.webp" alt="Logo" className="h-4" />
+              </Link>
               <div>
                 <Menu>
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
@@ -116,14 +168,23 @@ export default function Home() {
 
             <div className="grid grid-cols-4 gap-6">
               {SAMPLE.map((i) => (
-                <div key={i.id} className="w-full bg-white p-4 shadow rounded-md">
+                <Link key={i.id} href={`/chat/${i.slug}`} className="w-full bg-white p-4 shadow rounded-md">
                   {i.title}
-                </div>
+                </Link>
               ))}
             </div>
           </div>
         </section>
       </main>
+
+      {processing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center">
+          <div className="text-center">
+            <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="blue.500" size="xl" />
+            <p className="text-white">Uploading...</p>
+          </div>
+        </div>
+      )}
     </ChakraProvider>
   );
 }
