@@ -6,6 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import { Button, ChakraProvider, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import Link from "next/link";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import "react-pdf/dist/esm/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 const SAMPLE = [
   { id: 1, title: "Testing", slug: "rumah" },
@@ -18,6 +23,9 @@ export default function Home() {
   const router = useRouter();
   const params = useParams();
   const [user, setUser] = useState();
+  const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     api: "/api/chat",
     body: {
@@ -38,7 +46,13 @@ export default function Home() {
     }
   }, [params]);
 
-  console.log(messages);
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+  };
+
+  const goToPrevPage = () => setPageNumber(pageNumber - 1 <= 1 ? 1 : pageNumber - 1);
+
+  const goToNextPage = () => setPageNumber(pageNumber + 1 >= numPages ? numPages : pageNumber + 1);
 
   return (
     <ChakraProvider>
@@ -65,7 +79,22 @@ export default function Home() {
 
         <section className="h-[calc(100vh_-_4rem)]">
           <div className="grid grid-cols-1 md:grid-cols-2 h-full divide-x">
-            <div>PDF Viewer</div>
+            <div>
+              <div className="w-full h-10 bg-neutral-100 flex items-center justify-between px-2 text-sm">
+                <p>
+                  Page {pageNumber} of {numPages}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button className="px-2 py-1 rounded border bg-lime-400/20 hover:bg-lime-400 font-bold text-xs" onClick={goToPrevPage}>Prev</button>
+                  <button className="px-2 py-1 rounded border bg-lime-400/20 hover:bg-lime-400 font-bold text-xs" onClick={goToNextPage}>Next</button>
+                </div>
+              </div>
+              <div className="h-[calc(100vh_-_6.5rem)] overflow-hidden">
+                <Document file={`https://ipfs.io/ipfs/${params.id}`} onLoadSuccess={onDocumentLoadSuccess}>
+                  <Page pageNumber={pageNumber} />
+                </Document>
+              </div>
+            </div>
             <div className="bg-white h-full flex flex-col">
               <div className="h-[calc(100vH_-_9rem)] overflow-y-auto">
                 {messages.map((m) => (
@@ -73,7 +102,14 @@ export default function Home() {
                     {m.role === "user" ? (
                       <div className="flex items-start gap-2 p-4 bg-white">
                         <div className="shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-neutral-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
@@ -82,7 +118,14 @@ export default function Home() {
                     ) : (
                       <div className="flex items-start gap-2 p-4 bg-neutral-100">
                         <div className="shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-neutral-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
