@@ -1,14 +1,8 @@
 "use client";
+import "../flow/config";
 import { useEffect, useState } from "react";
 import * as fcl from "@onflow/fcl";
 import { useRouter } from "next/navigation";
-
-fcl
-  .config()
-  .put("app.detail.title", "DocuMinds")
-  .put("app.detail.icon", "https://fcl-discovery.onflow.org/images/blocto.png")
-  .put("accessNode.api", "https://rest-testnet.onflow.org")
-  .put("discovery.wallet", "https://fcl-discovery.onflow.org/testnet/authn");
 
 export default function Home() {
   const router = useRouter();

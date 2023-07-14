@@ -1,4 +1,5 @@
 "use client";
+import "../../../flow/config";
 import { useEffect, useMemo, useState } from "react";
 import { useChat } from "ai/react";
 import * as fcl from "@onflow/fcl";
