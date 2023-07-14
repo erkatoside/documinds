@@ -61,8 +61,8 @@
 			"key": "6d12eebfef9866c9b6fa92b97c6e705c26a1785b1e7944da701fc545a51d4673"
 		},
 		"testnet": {
-			"address": "76744ff2c7a9e5e2",
-			"key": "bd35d014251c48e2ef9fa4a1e24ef36dbafbf3b4916920558e3ba03dec853e4f"
+			"address": "452d09ed75e638c6",
+			"key": "1015d6e89fa5508c8cf1f83ec1f0057942beb941ae1b011ff5347fff1574510e"
 		}
 	},
 	"deployments": {

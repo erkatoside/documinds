@@ -1,11 +1,9 @@
 "use client";
 import "../../../flow/config";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useChat } from "ai/react";
-import * as fcl from "@onflow/fcl";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Button, ChakraProvider, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
 import Link from "next/link";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
@@ -13,17 +11,8 @@ import "react-pdf/dist/esm/Page/TextLayer.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
-const SAMPLE = [
-  { id: 1, title: "Testing", slug: "rumah" },
-  { id: 2, title: "Testing", slug: "lomba" },
-  { id: 3, title: "Testing", slug: "rumah" },
-  { id: 4, title: "Testing", slug: "lomba" },
-];
-
 export default function Home() {
-  const router = useRouter();
   const params = useParams();
-  const [user, setUser] = useState();
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
 
@@ -33,19 +22,6 @@ export default function Home() {
       slug: params.id,
     },
   });
-
-  useEffect(() => fcl.currentUser.subscribe(setUser), []);
-  useEffect(() => {
-    if (user?.loggedIn !== undefined && user?.loggedIn !== true) {
-      return router.push("/");
-    }
-  }, [user, router]);
-
-  useEffect(() => {
-    if (params) {
-      const data = SAMPLE.filter((o) => o.id == params.id)[0];
-    }
-  }, [params]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
@@ -64,16 +40,9 @@ export default function Home() {
               <Link href="/">
                 <img src="/img/documinds-dark.webp" alt="Logo" className="h-4" />
               </Link>
-              <div>
-                <Menu>
-                  <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                    {user?.addr}
-                  </MenuButton>
-                  <MenuList>
-                    <MenuItem onClick={() => fcl.unauthenticate()}>Logout</MenuItem>
-                  </MenuList>
-                </Menu>
-              </div>
+              <Link href="/" className="px-4 py-2 bg-lime-500 rounded text-sm font-bold">
+                Back to Home
+              </Link>
             </div>
           </div>
         </nav>

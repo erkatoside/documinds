@@ -7,32 +7,32 @@ pub contract Documinds {
 
     pub struct DocumentInfo {
         pub let id: UInt64
-        pub let slug: String
-        pub let ipfsUrl: String
+        pub let name: String
+        pub let ipfsHash: String
 
-        init(id: UInt64, slug: String, ipfsUrl: String) {
+        init(id: UInt64, name: String, ipfsHash: String) {
             self.id = id
-            self.slug = slug
-            self.ipfsUrl = ipfsUrl
+            self.name = name
+            self.ipfsHash = ipfsHash
         }
     }
 
     pub resource Document {
         pub var id: UInt64
-        pub var slug: String
-        pub var ipfsUrl: String
+        pub var name: String
+        pub var ipfsHash: String
 
-        init(id: UInt64, slug: String, ipfsUrl: String) {
+        init(id: UInt64, name: String, ipfsHash: String) {
             self.id = id
-            self.slug = slug
-            self.ipfsUrl = ipfsUrl
+            self.name = name
+            self.ipfsHash = ipfsHash
         }
 
         pub fun getDocInfo(): DocumentInfo {
             return DocumentInfo(
                 id: self.id,
-                slug: self.slug,
-                ipfsUrl: self.ipfsUrl,
+                name: self.name,
+                ipfsHash: self.ipfsHash,
             )
         }
     }
@@ -80,9 +80,9 @@ pub contract Documinds {
         return <- create DocCollection()
     }
 
-    pub fun mintDocument(slug: String, ipfsUrl: String): @Document {
+    pub fun mintDocument(name: String, ipfsHash: String): @Document {
 
-        var newDoc <- create Document(id: self.idCount, slug: slug, ipfsUrl: ipfsUrl)
+        var newDoc <- create Document(id: self.idCount, name: name, ipfsHash: ipfsHash)
         self.idCount = self.idCount + 1
         return <-newDoc
     }

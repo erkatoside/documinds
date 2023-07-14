@@ -8,13 +8,8 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useDropzone } from "react-dropzone";
 import Link from "next/link";
 import axios from "axios";
-
-const SAMPLE = [
-  { id: 1, title: "Testing", slug: "lomba" },
-  { id: 2, title: "Testing", slug: "rumah" },
-  { id: 3, title: "Testing", slug: "lomba" },
-  { id: 4, title: "Testing", slug: "rumah" },
-];
+import { checkIsInitialized, getOwnedDocs } from "@/flow/scripts";
+import { createDoc, initializeAccount } from "@/flow/transactions";
 
 const baseStyle = {
   flex: 1,
@@ -49,6 +44,8 @@ export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState();
   const [processing, setProcessing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [docs, setDocs] = useState([]);
 
   const { getRootProps, getInputProps, isFocused, isDragAccept, isDragReject } = useDropzone({
     multiple: false,
@@ -62,9 +59,9 @@ export default function Home() {
         });
       }
       setProcessing(true);
-      
+
       // Process upload file
-      let ipfsImageHash = "";
+      let ipfsHash = "";
       const fileId = new Date().toTimeString();
       const formData = new FormData();
       formData.append("file", f[0]);
@@ -89,7 +86,7 @@ export default function Home() {
           },
         });
 
-        ipfsImageHash = res.data.IpfsHash;
+        ipfsHash = res.data.IpfsHash;
       } catch (error) {
         setProcessing(false);
         return toast({
@@ -103,13 +100,15 @@ export default function Home() {
       await fetch("/api/upload", {
         method: "POST",
         body: JSON.stringify({
-          slug: ipfsImageHash,
-          url: `https://ipfs.io/ipfs/${ipfsImageHash}`,
+          slug: ipfsHash,
+          url: `https://ipfs.io/ipfs/${ipfsHash}`,
         }),
       })
         .then((res) => console.log(res))
         .catch((err) => console.log(err));
-        
+
+      await createNewDoc(f[0].name, ipfsHash);
+      await fetchMyDocs();
       setProcessing(false);
     },
   });
@@ -129,7 +128,65 @@ export default function Home() {
     if (user?.loggedIn !== undefined && user?.loggedIn !== true) {
       return router.push("/");
     }
+
+    if (user?.addr) {
+      checkInit();
+    }
   }, [user, router]);
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchMyDocs();
+    }
+  }, [isInitialized]);
+
+  async function createNewDoc(name, ipfsHash) {
+    try {
+      const txId = await createDoc(name, ipfsHash);
+      await fcl.tx(txId).onceSealed();
+    } catch (error) {
+      return toast({
+        title: error?.message,
+        status: "error",
+        isClosable: true,
+      });
+    }
+  }
+
+  async function fetchMyDocs() {
+    try {
+      const docs = await getOwnedDocs(user.addr);
+      setDocs(docs);
+    } catch (error) {
+      return toast({
+        title: error?.message,
+        status: "error",
+        isClosable: true,
+      });
+    }
+  }
+
+  const checkInit = async () => {
+    const isInit = await checkIsInitialized(user.addr);
+    setIsInitialized(isInit);
+  };
+
+  async function initialize() {
+    setProcessing(true);
+    try {
+      const txId = await initializeAccount();
+      await fcl.tx(txId).onceSealed();
+      await checkInit();
+      setProcessing(false);
+    } catch (error) {
+      setProcessing(false);
+      return toast({
+        title: error,
+        status: "error",
+        isClosable: true,
+      });
+    }
+  }
 
   return (
     <ChakraProvider>
@@ -156,24 +213,35 @@ export default function Home() {
 
         <section className="py-8">
           <div className="container mx-auto px-6">
-            <h1 className="font-bold text-2xl mb-2 text-neutral-700">Upload Your Doc</h1>
-
-            <div className="mb-6">
-              <div {...getRootProps({ style })}>
-                <input {...getInputProps()} />
-                <p>Drag n drop some files here, or click to select files</p>
+            {!isInitialized ? (
+              <div className="text-center">
+                <p className="font-bold text-2xl">Your account has not been initialized yet</p>
+                <button onClick={initialize} className="px-5 py-2.5 bg-lime-500 rounded font-bold mt-4">
+                  Initialize Account
+                </button>
               </div>
-            </div>
+            ) : (
+              <>
+                <h1 className="font-bold text-2xl mb-2 text-neutral-700">Upload Your Doc</h1>
 
-            <h2 className="font-bold text-2xl mb-2 text-neutral-700">My Docs</h2>
+                <div className="mb-6">
+                  <div {...getRootProps({ style })}>
+                    <input {...getInputProps()} />
+                    <p>Drag n drop some files here, or click to select files</p>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-4 gap-6">
-              {SAMPLE.map((i) => (
-                <Link key={i.id} href={`/chat/${i.slug}`} className="w-full bg-white p-4 shadow rounded-md">
-                  {i.title}
-                </Link>
-              ))}
-            </div>
+                <h2 className="font-bold text-2xl mb-2 text-neutral-700">My Docs</h2>
+
+                <div className="grid grid-cols-4 gap-6">
+                  {docs.map((i) => (
+                    <Link key={i.id} href={`/chat/${i.ipfsHash}`} className="w-full bg-white p-4 shadow rounded-md">
+                      {i.name}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </section>
       </main>
@@ -182,7 +250,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center">
           <div className="text-center">
             <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="blue.500" size="xl" />
-            <p className="text-white">Uploading...</p>
+            <p className="text-white">Processing...</p>
           </div>
         </div>
       )}
